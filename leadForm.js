@@ -1,5 +1,4 @@
 document.addEventListener("DOMContentLoaded", function() {
-    const leadDialog = document.getElementById('lead-dialog');
     const leadForm = document.getElementById('lead-form');
 
     // Handle form submission
@@ -9,9 +8,10 @@ document.addEventListener("DOMContentLoaded", function() {
         const formData = new FormData(leadForm);
         const selectedQuestions = formData.getAll('questions').join(', ');
         const email = formData.get('email');
+        const accountId = document.getElementById('dealership-logo').dataset.accountId;
 
         const leadData = {
-            account_id: document.getElementById('dealership-logo').dataset.accountId,
+            account_id: accountId,
             email: email,
             questions: selectedQuestions,
             submitted_at: new Date().toISOString()
@@ -43,8 +43,7 @@ document.addEventListener("DOMContentLoaded", function() {
             const result = await response.json();
             console.log(`Lead submission response: ${JSON.stringify(result)}`);
             alert('Your request has been submitted!');
-            leadDialog.classList.add('hidden');
-            leadDialog.style.display = 'none';
+            document.querySelector('#lead-dialog').classList.add('hide');
         } catch (error) {
             console.error(`Error submitting lead: ${error.message}`);
         }
