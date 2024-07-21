@@ -9,38 +9,41 @@
         if (detailPage) {
             API.insert('vehicle-media', async (elem, meta) => {
                 API.log('Inserting CTA widget...');
+                const ctaSection = document.createElement('div');
+                ctaSection.id = 'cta-section';
+                ctaSection.className = 'cta-section';
+                ctaSection.innerHTML = `
+                  <div class="cta-content">
+                    <h3>Need More Info?</h3>
+                    <p>Get more information on this vehicle by clicking the button below.</p>
+                    <a href="#" class="dialog btn btn-primary" data-width="500" data-title="Get More Information" data-el="#lead-dialog" data-name="lead-form">Click Here</a>
+                  </div>
+                `;
+                API.append(elem, ctaSection);
+
+                // Create hidden dialog content
                 const leadDialog = document.createElement('div');
                 leadDialog.id = 'lead-dialog';
-                leadDialog.className = 'lead-dialog hidden';
+                leadDialog.className = 'hide';
                 leadDialog.innerHTML = `
                   <div class="lead-dialog-content">
-                    <img id="dealership-logo" src="" alt="Dealership Logo" />
+                    <img id="dealership-logo" src="" alt="Dealership Logo" data-account-id="${accountId}" />
                     <p id="disclaimer"></p>
                     <form id="lead-form">
                       <input type="email" name="email" placeholder="Your email" required />
-                      <button type="submit">Submit</button>
+                      <div id="questions-container"></div>
+                      <button type="submit" class="btn btn-primary">Submit</button>
                     </form>
                   </div>
                 `;
                 document.body.appendChild(leadDialog);
 
                 const leadFormScript = document.createElement('script');
-                leadFormScript.src = 'https://cdn.jsdelivr.net/gh/littlecm/ddcctawidgetsaas@main/leadForm.js'; // Adjust the path as needed
+                leadFormScript.src = 'path/to/leadForm.js'; // Adjust the path as needed
                 leadFormScript.onload = () => {
                     API.log('Lead form script loaded.');
                 };
                 document.body.appendChild(leadFormScript);
-
-                const ctaButton = document.createElement('button');
-                ctaButton.id = 'cta-button';
-                ctaButton.className = 'cta-button';
-                ctaButton.textContent = 'Need more info? Ask here!';
-                ctaButton.addEventListener('click', () => {
-                    leadDialog.classList.remove('hidden');
-                    leadDialog.style.display = 'block';
-                });
-
-                API.append(elem, ctaButton);
 
                 // Fetch dealership-specific information from Hasura
                 await fetchDealershipInfo(accountId);
@@ -66,7 +69,7 @@
             document.getElementById('disclaimer').textContent = dealership.custom_disclaimer;
 
             // Populate form with dealership-specific questions
-            const leadForm = document.getElementById('lead-form');
+            const questionsContainer = document.getElementById('questions-container');
             const questions = [
                 { enabled: dealership.enable_photos, text: "Can you send me photos of this vehicle?" },
                 { enabled: dealership.enable_walkaround_video, text: "Can you send me a walk-around video of this vehicle?" },
@@ -84,7 +87,7 @@
                 if (question.enabled) {
                     const label = document.createElement('label');
                     label.innerHTML = `<input type="checkbox" name="questions" value="${question.text}"> ${question.text}`;
-                    leadForm.insertBefore(label, leadForm.querySelector('input[type="email"]'));
+                    questionsContainer.appendChild(label);
                 }
             });
         } catch (error) {
