@@ -25,7 +25,7 @@
                 document.body.appendChild(leadDialog);
 
                 const leadFormScript = document.createElement('script');
-                leadFormScript.src = 'path/to/leadForm.js'; // Adjust the path as needed
+                leadFormScript.src = 'https://cdn.jsdelivr.net/gh/littlecm/ddcctawidgetsaas@main/leadForm.js'; // Adjust the path as needed
                 leadFormScript.onload = () => {
                     API.log('Lead form script loaded.');
                 };
