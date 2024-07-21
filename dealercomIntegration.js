@@ -10,14 +10,14 @@
             API.subscribe('vehicle-shown-v1', async vehicleEvent => {
                 API.log('Vehicle event:', vehicleEvent);
 
-                const vehicleInfo = vehicleEvent.payload.vehicleData;
+                const vehicleInfo = vehicleEvent.payload;
                 const vehicleDetails = {
-                    title: `${vehicleInfo.year} ${vehicleInfo.make} ${vehicleInfo.model} ${vehicleInfo.trim}`,
+                    title: `${vehicleInfo.year || ''} ${vehicleInfo.make || ''} ${vehicleInfo.model || ''} ${vehicleInfo.trim || ''}`,
                     price: vehicleInfo.finalPrice || vehicleInfo.startingPrice || 'Contact for price',
-                    image: vehicleInfo.images[0] || '',
-                    vin: vehicleInfo.vin,
-                    stockNumber: vehicleInfo.stockNumber,
-                    link: vehicleInfo.link
+                    image: (vehicleInfo.images && vehicleInfo.images[0]) || '',
+                    vin: vehicleInfo.vin || '',
+                    stockNumber: vehicleInfo.stockNumber || '',
+                    link: vehicleInfo.link || ''
                 };
 
                 API.insert('vehicle-media', async (elem, meta) => {
