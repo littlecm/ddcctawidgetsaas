@@ -7,51 +7,86 @@
         API.log(`Detail Page: ${detailPage}`);
 
         if (detailPage) {
-            API.insert('vehicle-media', async (elem, meta) => {
-                API.log('Inserting CTA widget...');
-                const ctaSection = document.createElement('div');
-                ctaSection.id = 'cta-section';
-                ctaSection.className = 'cta-section';
-                ctaSection.innerHTML = `
-                  <div class="cta-content">
-                    <h3>Need More Info?</h3>
-                    <p>Get more information on this vehicle by clicking the button below.</p>
-                    <a href="#" class="dialog btn btn-primary" data-width="500" data-title="Get More Information" data-el="#lead-dialog" data-name="lead-form">Click Here</a>
-                  </div>
-                `;
-                API.append(elem, ctaSection);
+            API.subscribe('vehicle-shown-v1', async vehicleEvent => {
+                API.log('Vehicle event:', vehicleEvent);
 
-                // Create hidden dialog content
-                const leadDialog = document.createElement('div');
-                leadDialog.id = 'lead-dialog';
-                leadDialog.className = 'hide';
-                leadDialog.innerHTML = `
-                  <div class="lead-dialog-content">
-                    <img id="dealership-logo" src="" alt="Dealership Logo" data-account-id="${accountId}" />
-                    <p id="disclaimer"></p>
-                    <form id="lead-form">
-                      <input type="email" name="email" placeholder="Your email" required />
-                      <div id="questions-container"></div>
-                      <button type="submit" class="btn btn-primary">Submit</button>
-                    </form>
-                  </div>
-                `;
-                document.body.appendChild(leadDialog);
-
-                const leadFormScript = document.createElement('script');
-                leadFormScript.src = 'path/to/leadForm.js'; // Adjust the path as needed
-                leadFormScript.onload = () => {
-                    API.log('Lead form script loaded.');
+                const vehicleInfo = vehicleEvent.payload.vehicleData;
+                const vehicleDetails = {
+                    title: `${vehicleInfo.year} ${vehicleInfo.make} ${vehicleInfo.model} ${vehicleInfo.trim}`,
+                    price: vehicleInfo.finalPrice || vehicleInfo.startingPrice || 'Contact for price',
+                    image: vehicleInfo.images[0] || '',
+                    vin: vehicleInfo.vin,
+                    stockNumber: vehicleInfo.stockNumber,
+                    link: vehicleInfo.link
                 };
-                document.body.appendChild(leadFormScript);
 
-                // Fetch dealership-specific information from Hasura
-                await fetchDealershipInfo(accountId);
+                API.insert('vehicle-media', async (elem, meta) => {
+                    API.log('Inserting CTA widget...');
+                    const ctaSection = document.createElement('div');
+                    ctaSection.id = 'cta-section';
+                    ctaSection.className = 'widget';
+                    ctaSection.innerHTML = `
+                      <section class="widgetSmall">
+                        <div class="titleAndDescription">
+                          <div class="contentWrapper">
+                            <div class="dealerInfo">
+                              <img id="dealership-logo" src="" width="200" alt="Dealership logo">
+                            </div>
+                            <h2 class="title">Need More Info?</h2>
+                            <p class="description">Get more information on this vehicle by clicking the button below.</p>
+                          </div>
+                          <div class="poweredBy">
+                            Powered by
+                            <img src="/assets/images/logo-main.png" alt="Mi AI Marketing" class="poweredLogo">
+                          </div>
+                        </div>
+                        <div class="formWrapper">
+                          <button name="Close widget" type="button" aria-label="Close widget" class="closeWidgetButton">
+                            <svg class="closeIcon"><path d="M21.5 12.5L12.5 21.5"></path> <path d="M12.5 12.5L21.5 21.5"></path></svg>
+                          </button>
+                          <a href="#" class="dialog btn btn-primary" data-width="500" data-title="Get More Information" data-el="#lead-dialog" data-name="lead-form">Click Here</a>
+                        </div>
+                      </section>
+                    `;
+                    API.append(elem, ctaSection);
+
+                    // Create hidden dialog content
+                    const leadDialog = document.createElement('div');
+                    leadDialog.id = 'lead-dialog';
+                    leadDialog.className = 'hide';
+                    leadDialog.innerHTML = `
+                      <div class="lead-dialog-content">
+                        <img id="vehicle-image" src="${vehicleDetails.image}" alt="Vehicle Image" />
+                        <h2 id="vehicle-title">${vehicleDetails.title}</h2>
+                        <p id="vehicle-price">${vehicleDetails.price}</p>
+                        <p id="disclaimer"></p>
+                        <form id="lead-form">
+                          <input type="text" name="first_name" placeholder="First Name" required />
+                          <input type="text" name="last_name" placeholder="Last Name" required />
+                          <input type="tel" name="phone" placeholder="Phone Number" required />
+                          <input type="email" name="email" placeholder="Your email" required />
+                          <div id="questions-container"></div>
+                          <button type="submit" class="btn btn-primary">Submit</button>
+                        </form>
+                      </div>
+                    `;
+                    document.body.appendChild(leadDialog);
+
+                    const leadFormScript = document.createElement('script');
+                    leadFormScript.src = 'https://cdn.jsdelivr.net/gh/littlecm/ddcctawidgetsaas@main/leadForm.js'; // Adjust the path as needed
+                    leadFormScript.onload = () => {
+                        API.log('Lead form script loaded.');
+                    };
+                    document.body.appendChild(leadFormScript);
+
+                    // Fetch dealership-specific information from Hasura
+                    await fetchDealershipInfo(accountId, vehicleDetails);
+                });
             });
         }
     });
 
-    async function fetchDealershipInfo(accountId) {
+    async function fetchDealershipInfo(accountId, vehicleDetails) {
         API.log(`Fetching dealership info for Account ID: ${accountId}`);
         try {
             const response = await fetch(`https://hasura-production-e37d.up.railway.app/api/rest/dealerships_leads_info_cta_widget/${accountId}`, {
@@ -90,8 +125,15 @@
                     questionsContainer.appendChild(label);
                 }
             });
+
+            // Pass vehicleDetails to lead form script
+            const leadForm = document.getElementById('lead-form');
+            leadForm.dataset.vehicleDetails = JSON.stringify(vehicleDetails);
         } catch (error) {
             API.log(`Error fetching dealership info: ${error.message}`);
         }
     }
+
+    // Inject CSS
+    await API.loadCSS('https://cdn.jsdelivr.net/gh/littlecm/ddcctawidgetsaas@main/styles.css');
 })(window.DDC.APILoader);
